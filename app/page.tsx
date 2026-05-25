@@ -12,49 +12,45 @@ export default function Home() {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
-    year: 'numeric',
   });
 
   return (
-    <div className="bg-grid min-h-dvh">
-      {/* Header */}
+    <div className="bg-grid min-h-dvh flex flex-col">
+
+      {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b border-slate-800/60 backdrop-blur-xl bg-[#020817]/80">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-sm shadow-lg shadow-blue-500/20">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-xs">
               📡
             </div>
-            <div>
-              <h1 className="text-sm font-bold text-slate-100 leading-none">Gündem Radar</h1>
-              <p className="text-[10px] text-slate-600 capitalize mt-0.5 hidden sm:block">{now}</p>
-            </div>
+            <span className="text-sm font-bold text-slate-100">Gündem Radar</span>
+            <span className="text-slate-700 text-xs hidden sm:inline">·</span>
+            <span className="text-slate-600 text-xs capitalize hidden sm:inline">{now}</span>
           </div>
           <RefreshButton />
         </div>
       </header>
 
-      {/* Main */}
-      <main className="max-w-7xl mx-auto px-4 py-5 space-y-4 pb-10">
+      <main className="max-w-6xl mx-auto w-full px-4 py-4 flex flex-col gap-4 flex-1">
 
-        {/* Üst satır — 3 finansal kart */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Finansal özet — kompakt üst bant */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <BorsaCard />
           <DovizCard />
-          <div className="sm:col-span-2 lg:col-span-1">
-            <PortfolioCard />
-          </div>
+          <PortfolioCard />
         </div>
 
-        {/* Trendler */}
-        <TrendsCard />
+        {/* Gündem — trendler + haberler yan yana */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+          <TrendsCard />
+          <NewsCard />
+        </div>
 
-        {/* Haberler */}
-        <NewsCard />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/60 py-4">
-        <p className="text-center text-xs text-slate-700">
+      <footer className="border-t border-slate-800/40 py-3">
+        <p className="text-center text-[11px] text-slate-800">
           Gündem Radar · Veriler her 5 dakikada otomatik yenilenir
         </p>
       </footer>

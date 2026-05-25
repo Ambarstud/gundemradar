@@ -1,5 +1,39 @@
-import * as cheerio from 'cheerio';
 import { TrendsData, TrendItem } from '@/lib/types';
+
+async function scrapeFromTrends24(): Promise<TrendItem[]> {
+  const res = await fetch('https://trends24.in/turkey/', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml',
+      'Accept-Language': 'tr-TR,tr;q=0.9',
+    },
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`trends24.in hatası: ${res.status}`);
+  const html = await res.text();
+
+  // trends24.in: Twitter arama linkleri olan tüm <a> elemanları
+  const matches = Array.from(
+    html.matchAll(/href="(https:\/\/twitter\.com\/search\?q=[^"]+)"[^>]*>([^<]+)<\/a>/g)
+  );
+
+  const seen = new Set<string>();
+  const trends: TrendItem[] = [];
+
+  for (const [, url, rawName] of matches) {
+    const name = rawName.trim();
+    if (!name || seen.has(name) || name.length > 80 || name.length < 2) continue;
+    seen.add(name);
+    trends.push({
+      rank: trends.length + 1,
+      name,
+      url,
+    });
+    if (trends.length >= 20) break;
+  }
+
+  return trends;
+}
 
 async function scrapeFromTwtdata(): Promise<TrendItem[]> {
   const res = await fetch('https://twtdata.com/twitter-trends/turkey/', {
@@ -11,68 +45,35 @@ async function scrapeFromTwtdata(): Promise<TrendItem[]> {
   });
   if (!res.ok) throw new Error(`twtdata.com hatası: ${res.status}`);
   const html = await res.text();
-  const $ = cheerio.load(html);
 
+  const matches = Array.from(
+    html.matchAll(/href="(https?:\/\/(?:twitter|x)\.com\/search[^"]+)"[^>]*>([^<]{2,60})<\/a>/g)
+  );
+
+  const seen = new Set<string>();
   const trends: TrendItem[] = [];
 
-  // Farklı olası selektörler dene
-  $('table tr, .trend-item, [class*="trend"]').each((i, el) => {
-    if (trends.length >= 10) return;
-    const text = $(el).text().trim();
-    const name = text.split('\n')[0]?.trim();
-    if (name && name.length > 1 && name.length < 100) {
-      const countMatch = text.match(/([\d,.]+)\s*[KkMm]?\s*(tweet|tw|gönderi)/i);
-      trends.push({
-        rank: trends.length + 1,
-        name,
-        tweetCount: countMatch ? parseInt(countMatch[1].replace(/[,\.]/g, '')) : undefined,
-        url: `https://twitter.com/search?q=${encodeURIComponent(name)}&src=trend_click`,
-      });
-    }
-  });
-
-  return trends;
-}
-
-async function scrapeFromTwitterTrending(): Promise<TrendItem[]> {
-  const res = await fetch('https://twitter-trending.com/turkey', {
-    headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' },
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) throw new Error(`twitter-trending.com hatası: ${res.status}`);
-  const html = await res.text();
-  const $ = cheerio.load(html);
-
-  const trends: TrendItem[] = [];
-  $('li, .trend, [class*="trend"], td').each((_, el) => {
-    if (trends.length >= 10) return;
-    const text = $(el).text().trim();
-    if (text && text.length > 1 && text.length < 80 && !text.includes('\n\n')) {
-      trends.push({
-        rank: trends.length + 1,
-        name: text,
-        url: `https://twitter.com/search?q=${encodeURIComponent(text)}&src=trend_click`,
-      });
-    }
-  });
+  for (const [, url, rawName] of matches) {
+    const name = rawName.trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    trends.push({ rank: trends.length + 1, name, url });
+    if (trends.length >= 20) break;
+  }
 
   return trends;
 }
 
 export async function fetchTrends(): Promise<TrendsData> {
-  const strategies = [scrapeFromTwtdata, scrapeFromTwitterTrending];
-
-  for (const strategy of strategies) {
+  for (const scraper of [scrapeFromTrends24, scrapeFromTwtdata]) {
     try {
-      const trends = await strategy();
-      if (trends.length >= 3) {
-        return { trends: trends.slice(0, 10), updatedAt: new Date().toISOString() };
+      const trends = await scraper();
+      if (trends.length >= 5) {
+        return { trends: trends.slice(0, 20), updatedAt: new Date().toISOString() };
       }
     } catch {
-      // Sonraki stratejiyi dene
+      // sonraki kaynağı dene
     }
   }
-
-  // Her iki kaynak da başarısız olduysa boş döndür
   return { trends: [], updatedAt: new Date().toISOString() };
 }
