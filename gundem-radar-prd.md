@@ -1,34 +1,37 @@
 # 🇹🇷 GÜNDEM RADAR — Proje Dökümanı (PRD)
 
 > **Türkiye gündemini tek ekrandan takip eden kişisel dashboard uygulaması.**
-> Vercel üzerinde deploy edilecek, tamamen ücretsiz altyapı ile çalışacak.
+> Vercel üzerinde deploy edilmiş, tamamen ücretsiz altyapı ile çalışıyor.
 
 ---
 
 ## 1. PROJE ÖZETİ
 
-**Gündem Radar**, Türkiye'deki güncel gelişmeleri — haberler, Twitter/X trendleri, borsa, döviz ve altın — tek bir dashboard üzerinden takip etmeyi sağlayan kişisel bir web uygulamasıdır.
+**Gündem Radar**, Türkiye'deki güncel gelişmeleri — haberler, X/Twitter trendleri, borsa, döviz ve altın — tek bir dashboard üzerinden takip eden kişisel bir web uygulamasıdır.
 
 | Alan | Detay |
 |------|-------|
-| **Proje sahibi** | Berkay |
+| **Proje sahibi** | Berkay (GitHub: Ambarstud) |
 | **Kullanım** | Kişisel (tek kullanıcı) |
 | **Platform** | Web (responsive, mobil uyumlu) + PWA + Telegram bildirim |
-| **Tech stack** | Next.js 14+ (App Router), TypeScript, Tailwind CSS |
-| **Deployment** | Vercel (Hobby plan — ücretsiz) |
-| **Veritabanı** | Upstash Redis (ücretsiz tier, cache amaçlı) |
-| **Bütçe** | $0 — tamamen ücretsiz servisler kullanılacak |
+| **Tech stack** | Next.js 16 (App Router), TypeScript, Tailwind CSS v4 |
+| **Deployment** | Vercel Hobby plan (ücretsiz) |
+| **Cache** | Upstash Redis (opsiyonel — olmadan da çalışır) |
+| **Bütçe** | $0 — tamamen ücretsiz servisler |
+| **Production URL** | https://gundem-radar.vercel.app |
+| **GitHub** | https://github.com/Ambarstud/gundemradar |
+| **Proje dizini** | `/Users/berkaysarikaya/Projects/gundem-radar` |
 
 ---
 
 ## 2. KULLANICI HİKAYELERİ
 
-1. **Gündem Özeti:** Kullanıcı uygulamayı açtığında, Türkiye gündeminin tek ekranlık bir özetini görür.
+1. **Gündem Özeti:** Uygulamayı açınca Türkiye gündeminin tek ekranlık özetini görür.
 2. **Borsa Durumu:** "Borsa bugün artıda mı ekside mi?", "Dolar ne kadar?", "Altın düştü mü?" sorularına tek bakışta cevap alır.
-3. **Twitter Trendleri:** Türkiye'de şu an neyin konuşulduğunu, en popüler 10 trendi görür.
-4. **Haber Takibi:** Son dakika ve önemli haberleri kategoriye göre takip eder.
-5. **Portföy Takibi:** Kendi hisselerinin (THYAO, ASELS, ENJSA, KCHOL) ve VOO ETF'inin anlık durumunu görür.
-6. **Bildirim:** Önemli gelişmelerde (borsa %3+ hareket, önemli haber) Telegram'dan bildirim alır.
+3. **X Trendleri:** Türkiye'de şu an X'te neyin konuşulduğunu, haberlere girmeden önce patlayan konuları görür.
+4. **Haber Takibi:** NTV, TRT Haber, Sözcü kaynaklı son dakika haberlerini takip eder.
+5. **Portföy Takibi:** THYAO, ASELS, ENJSA, KCHOL ve VOO ETF'inin anlık durumunu görür.
+6. **Bildirim:** Önemli gelişmelerde (BIST %3+, hisse %5+, Dolar %2+) Telegram'dan bildirim alır.
 7. **Mobil Erişim:** Telefonunun ana ekranına ekleyerek (PWA) hızlıca açar.
 
 ---
@@ -36,196 +39,162 @@
 ## 3. TEKNİK MİMARİ
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    FRONTEND                          │
-│         Next.js 14 + Tailwind CSS + TypeScript       │
-│                                                      │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │
-│  │ Twitter  │ │  Borsa   │ │ Haberler │ │Portföy  │ │
-│  │ Trendler │ │Döviz/Alt.│ │          │ │         │ │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬────┘ │
-│       │            │            │             │      │
-├───────┼────────────┼────────────┼─────────────┼──────┤
-│       ▼            ▼            ▼             ▼      │
-│              NEXT.JS API ROUTES                      │
-│           /api/trends                                │
-│           /api/borsa                                 │
-│           /api/haberler                              │
-│           /api/portfolio                             │
-│                                                      │
-├──────────────────────────────────────────────────────┤
-│              VERCEL CRON JOBS                        │
-│     Her 15 dk → borsa/döviz güncelle                 │
-│     Her 30 dk → trendleri güncelle                   │
-│     Her 1 saat → haberleri güncelle                  │
-│     Tetiklenince → Telegram bildirim                 │
-│                                                      │
-├──────────────────────────────────────────────────────┤
-│              UPSTASH REDIS (Cache)                   │
-│     trends:latest    → Twitter trend verisi          │
-│     borsa:summary    → BIST özet verisi              │
-│     doviz:latest     → Döviz/altın kurları           │
-│     news:latest      → Son haberler                  │
-│     portfolio:latest → Portföy durumu                │
-└──────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                      FRONTEND                            │
+│          Next.js 16 + Tailwind CSS v4 + TypeScript       │
+│                                                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                 │
+│  │  Borsa   │ │  Döviz   │ │ Portföy  │  ← üst bant     │
+│  └──────────┘ └──────────┘ └──────────┘                 │
+│  ┌───────────────────┐ ┌───────────────────┐             │
+│  │  X Trendleri      │ │   Son Haberler    │  ← yan yana │
+│  └───────────────────┘ └───────────────────┘             │
+│                                                          │
+│  Her kart SWR ile kendi API'sini 5dk'da bir çeker        │
+│                                                          │
+├──────────────────────────────────────────────────────────┤
+│                   NEXT.JS API ROUTES                     │
+│           /api/borsa      /api/doviz                     │
+│           /api/portfolio  /api/haberler                  │
+│           /api/trends     /api/cron                      │
+│                                                          │
+├──────────────────────────────────────────────────────────┤
+│               UPSTASH REDIS (Opsiyonel Cache)            │
+│     borsa:summary    → TTL 15 dk                         │
+│     doviz:latest     → TTL 15 dk                         │
+│     portfolio:latest → TTL 15 dk                         │
+│     news:latest      → TTL 60 dk                         │
+│     trends:latest    → TTL 30 dk                         │
+│  ⚠️  Redis yoksa her istek doğrudan kaynak API'ye gider  │
+│                                                          │
+├──────────────────────────────────────────────────────────┤
+│            VERCEL CRON (Hobby: günde 1 çalışma)          │
+│     Her gün 07:00 UTC (10:00 TR) → /api/cron             │
+│     Tüm cache'i ısıtır + Telegram alertleri gönderir     │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### 3.1 Neden Bu Mimari?
+### 3.1 Mimari Kararları
 
-- **Next.js API Routes**: Vercel'de sunucu tarafında çalışır. Dış API'lere istek atar, veriyi işler, frontend'e temiz JSON döner. Böylece API key'ler gizli kalır, CORS sorunları olmaz.
-- **Upstash Redis**: Vercel ile entegre, ücretsiz tier günde 10.000 istek. Cache olarak kullanılır — her seferinde dış API'ye gitmek yerine Redis'ten okur, cron job ile periyodik günceller.
-- **Vercel Cron**: `vercel.json` dosyasında tanımlanan zamanlı görevler. Ücretsiz planda günde 1 cron çalışır, Hobby planda (ücretsiz ama kredi kartı gerekir) daha sık çalışır.
+- **Next.js API Routes:** Sunucu tarafında çalışır, API key'ler gizli kalır, CORS sorunu olmaz.
+- **Upstash Redis (opsiyonel):** Env var tanımlanmazsa cache atlanır, her istek kaynaktan çeker. SWR zaten client tarafında 5 dakika cache'lediği için Redis olmadan da kullanılabilir.
+- **Vercel Cron:** Hobby planda günde 1 çalışma hakkı var. Cache ısıtma ve Telegram alert için sabah 10'da çalışır. Gün içi veri güncellemesi frontend SWR tarafından yapılır.
 
 ---
 
 ## 4. VERİ KAYNAKLARI
 
-### 4.1 Borsa / Döviz / Altın
+### 4.1 Borsa — Yahoo Finance ✅
+
+> **⚠️ BigPara (hurriyet.com.tr) endpoint'leri test sırasında erişim engeli verdi ("You do not have permission"). Yahoo Finance kullanılıyor.**
 
 | Veri | Kaynak | Endpoint | Maliyet |
 |------|--------|----------|---------|
-| BIST 100 özet | BigPara (Hürriyet) | `bigpara.hurriyet.com.tr/api/v1/borsa/hisseyuzeysel/{SEMBOL}` | Ücretsiz, API key yok |
-| Hisse listesi | BigPara | `bigpara.hurriyet.com.tr/api/v1/hisse/list` | Ücretsiz |
-| BIST Endeksler | Foreks/ParaGaranti | `web-paragaranti-pubsub.foreks.com/web-services/securities/exchanges/BIST/groups/E` | Ücretsiz |
-| Döviz kurları | TCMB | `tcmb.gov.tr/kurlar/today.xml` | Ücretsiz, resmi |
-| Altın fiyatları | BigPara veya CollectAPI | Çeşitli endpoint'ler | Ücretsiz |
+| BIST 100 | Yahoo Finance | `query1.finance.yahoo.com/v8/finance/chart/XU100.IS` | Ücretsiz |
+| BIST 30 | Yahoo Finance | `query1.finance.yahoo.com/v8/finance/chart/XU030.IS` | Ücretsiz |
+| THYAO, ASELS, ENJSA, KCHOL | Yahoo Finance | `query1.finance.yahoo.com/v8/finance/chart/{SEMBOL}.IS` | Ücretsiz |
 | VOO (S&P 500 ETF) | Yahoo Finance | `query1.finance.yahoo.com/v8/finance/chart/VOO` | Ücretsiz |
 
-**Önemli Not:** BigPara endpoint'leri resmi bir API değil, Hürriyet'in kendi mobil uygulaması için kullandığı public endpoint'ler. Rate limiting yapabilirler. Bu yüzden her istekte değil, cron ile cache'leyerek kullanıyoruz.
+**Günlük değişim hesabı:** `(regularMarketPrice - chartPreviousClose) / chartPreviousClose × 100`
 
-**Gösterilecek veriler:**
-- BIST 100 endeksi: son değer, günlük değişim yüzdesi, artı/eksi durumu
-- Dolar/TL, Euro/TL: alış-satış, günlük değişim
-- Gram altın, çeyrek altın: güncel fiyat, değişim
-- Kullanıcı portföyü: THYAO, ASELS, ENJSA, KCHOL, VOO — her birinin fiyatı ve günlük değişimi
+### 4.2 Döviz & Altın
 
-### 4.2 Twitter/X Trendleri
+| Veri | Kaynak | Endpoint | Maliyet |
+|------|--------|----------|---------|
+| Dolar/TL, Euro/TL, Sterlin/TL | TCMB (resmi) | `https://www.tcmb.gov.tr/kurlar/today.xml` | Ücretsiz |
+| Gram Altın (TRY) | Hesaplanmış | `(Yahoo GC=F fiyatı ÷ 31.1035) × USD/TRY` | Ücretsiz |
+| Çeyrek Altın (TRY) | Hesaplanmış | `Gram Altın × 1.75` | — |
 
-Twitter API ücretsiz tier'ı 2023'te kaldırıldı. Alternatif yöntemler:
-
-| Yöntem | Kaynak | Detay |
-|--------|--------|-------|
-| **Birincil** | Scraping: `twtdata.com/twitter-trends/turkey/` veya `twitter-trending.com/turkey` | HTML'den trend listesini parse et |
-| **Yedek** | Apify Twitter Trends Scraper | Ücretsiz tier'da sınırlı (aylık belirli kredi) |
-| **Yedek 2** | Google Trends API (resmi olmayan) | `trends.google.com` TR verisini çek |
-
-**Scraping Stratejisi:**
-1. Vercel Cron → API Route tetiklenir
-2. API Route, `twtdata.com/twitter-trends/turkey/` sayfasını fetch eder
-3. HTML'den trend adı ve tweet volume bilgisi parse edilir (regex veya cheerio ile)
-4. Sonuç Redis'e yazılır
-5. Frontend Redis'ten okur
-
-**Gösterilecek veriler:**
-- Top 10 trend konusu
-- Her trendin tweet hacmi (varsa)
-- Trend olma süresi (varsa)
-
-### 4.3 Haberler
-
-| Kaynak | Endpoint | Detay |
-|--------|----------|-------|
-| **Birincil: RSS Feed'ler** | NTV, CNN Türk, Sözcü, TRT Haber | Ücretsiz, sınırsız, güvenilir |
-| **Yedek: NewsAPI** | `newsapi.org/v2/top-headlines?country=tr` | Ücretsiz: 100 istek/gün (development only) |
-| **Yedek 2: MediaStack** | `api.mediastack.com/v1/news?countries=tr` | Ücretsiz: 100 istek/ay |
-
-**RSS Feed URL'leri:**
+**Altın Hesaplama:**
 ```
-NTV Gündem:    https://www.ntv.com.tr/gundem.rss
-NTV Ekonomi:   https://www.ntv.com.tr/ekonomi.rss
-CNN Türk:      https://www.cnnturk.com/feed/rss/all/news
-TRT Haber:     https://www.trthaber.com/sondakika.rss
-Sözcü:         https://www.sozcu.com.tr/rss/tum-haberler.xml
+Yahoo Finance: GC=F (Altın vadeli - USD/troy oz)
+Gram Altın TRY = (GC=F_fiyat / 31.1035) × TCMB_USD_satis
 ```
 
-**RSS Parse Stratejisi:**
-1. `rss-parser` npm paketi ile RSS XML → JSON dönüşümü
-2. Birden fazla kaynaktan haberleri çek
-3. Tarihe göre sırala, son 20 haberi al
-4. Redis'e yaz
+**TCMB XML Notu:** Hafta sonu güncellenmez. Cuma kapanış verisi Pazartesi'ye kadar aynı kalır.
 
-**Gösterilecek veriler:**
-- Son 15-20 haber başlığı
-- Kaynak adı ve zamanı
-- Habere tıklayınca orijinal kaynağa yönlendirme
+### 4.3 X/Twitter Trendleri
+
+Twitter API 2023'te ücretsiz tier'ı kaldırdı. Scraping kullanılıyor:
+
+| Kaynak | URL | Yöntem | Durum |
+|--------|-----|--------|-------|
+| **Birincil** | `trends24.in/turkey/` | Regex: Twitter arama linkleri | ✅ Çalışıyor, 20 trend |
+| **Yedek** | `twtdata.com/twitter-trends/turkey/` | Regex: Twitter/X arama linkleri | Fallback |
+
+**Scraping Yöntemi (regex, cheerio yok):**
+```typescript
+const matches = html.matchAll(
+  /href="(https:\/\/twitter\.com\/search\?q=[^"]+)"[^>]*>([^<]+)<\/a>/g
+);
+```
+Duplicate filtresi + 80 karakter sınırı ile top 20 benzersiz trend alınır.
+
+**Gösterilecek veriler:** Top 20 trend, tıklayınca X'te o arama açılır.
+
+### 4.4 Haberler — RSS Feed'leri
+
+| Kaynak | RSS URL | Kategori |
+|--------|---------|----------|
+| NTV Gündem | `https://www.ntv.com.tr/gundem.rss` | gündem |
+| NTV Ekonomi | `https://www.ntv.com.tr/ekonomi.rss` | ekonomi |
+| TRT Haber | `https://www.trthaber.com/sondakika.rss` | gündem |
+| Sözcü | `https://www.sozcu.com.tr/rss/tum-haberler.xml` | gündem |
+
+**Parse Stratejisi:** `rss-parser` paketi ile paralel fetch → tarihe göre sırala → son 20 haber.
 
 ---
 
-## 5. MODÜLLER VE DASHBOARD TASARIMI
+## 5. DASHBOARD TASARIMI
 
-Dashboard tek sayfalık bir layout. Mobilde kartlar alt alta, desktop'ta grid şeklinde.
+### 5.1 Layout
 
-### 5.1 Kart: Borsa Özeti
 ```
-┌────────────────────────────────┐
-│ 📈 BORSA ÖZETİ                │
-│                                │
-│ BIST 100   10.234   ▲ +%1.2   │
-│ BIST 30     5.678   ▲ +%0.8   │
-│                                │
-│ Son güncelleme: 14:35          │
-└────────────────────────────────┘
-```
+Desktop (≥768px):
+┌──────────────┬──────────────┬──────────────┐
+│  Borsa Özeti │ Döviz/Altın  │  Portföyüm   │
+├──────────────┴──────────────┴──────────────┤
+│  X'te Şu An (sol)  │  Son Haberler (sağ)  │
+└────────────────────┴──────────────────────┘
 
-### 5.2 Kart: Döviz & Altın
-```
-┌────────────────────────────────┐
-│ 💰 DÖVİZ & ALTIN              │
-│                                │
-│ Dolar    38.42 TL   ▼ -%0.3   │
-│ Euro     42.15 TL   ▲ +%0.1   │
-│ Gr.Altın  3.245 TL  ▲ +%0.5   │
-│ Çy.Altın  5.320 TL  ▲ +%0.4   │
-│                                │
-│ Kaynak: TCMB / Son: 14:35     │
-└────────────────────────────────┘
+Mobil (<768px):
+┌────────────────────┐
+│     Borsa Özeti    │
+├────────────────────┤
+│    Döviz / Altın   │
+├────────────────────┤
+│     Portföyüm      │
+├────────────────────┤
+│   X'te Şu An      │
+├────────────────────┤
+│    Son Haberler    │
+└────────────────────┘
 ```
 
-### 5.3 Kart: Portföyüm
-```
-┌────────────────────────────────┐
-│ 💼 PORTFÖYÜM                  │
-│                                │
-│ THYAO    312.40 TL  ▲ +%2.1   │
-│ ASELS    178.60 TL  ▼ -%0.5   │
-│ ENJSA     48.90 TL  ▲ +%1.3   │
-│ KCHOL    215.80 TL  ▲ +%0.7   │
-│ VOO     $542.30     ▼ -%0.2   │
-│                                │
-│ Son: 14:35                     │
-└────────────────────────────────┘
-```
+### 5.2 Tasarım Sistemi
 
-### 5.4 Kart: Twitter/X Trendleri
-```
-┌────────────────────────────────┐
-│ 🔥 TÜRKİYE TREND              │
-│                                │
-│ 1. #GalatasaraySK    125K tw   │
-│ 2. Erdoğan            89K tw   │
-│ 3. #dolar              67K tw   │
-│ 4. ...                         │
-│ ...                            │
-│ 10. ...                        │
-│                                │
-│ Son: 14:00                     │
-└────────────────────────────────┘
-```
+- **Background:** `#020817` (slate-950 benzeri), mavi/mor radial gradient glow
+- **Kartlar:** Glassmorphism — `backdrop-blur`, `rgba(15,23,42,0.7)` arka plan, ince `slate/8` border
+- **Renk sistemi:**
+  - Artış: `emerald-400` + `emerald-500/10` pill badge
+  - Düşüş: `red-400` + `red-500/10` pill badge
+  - Nötr: `slate-400` + `slate-500/10` pill badge
+- **Font:** Inter (Google Fonts)
+- **Köşe:** `rounded-2xl` (16px)
+- **Loading:** Shimmer animasyonlu skeleton kartlar
+- **Header:** Sticky, `backdrop-blur-xl`, `#020817/80`
 
-### 5.5 Kart: Son Haberler
-```
-┌────────────────────────────────┐
-│ 📰 SON HABERLER                │
-│                                │
-│ • Başlık 1...          NTV 5dk │
-│ • Başlık 2...      CNN Türk 12dk│
-│ • Başlık 3...          TRT 18dk│
-│ • Başlık 4...        Sözcü 25dk│
-│ • ...                          │
-│                                │
-│ Tümünü gör →                   │
-└────────────────────────────────┘
-```
+### 5.3 Kartlar
+
+**BorsaCard** — BIST 100 büyük font, BIST 30 ikinci satır. Piyasa açık/kapalı badge.
+
+**DovizCard** — Dolar, Euro, Gram Altın, Çeyrek Altın. Kaynak: TCMB.
+
+**PortfolioCard** — Her hisse için mini logo kutusu + sembol + fiyat + değişim badge.
+
+**TrendsCard** — Sıralı liste, her satır tıklanabilir (X aramasına gider). "𝕏 X'te Şu An" başlığı.
+
+**NewsCard** — Kompakt liste, kaynak renkli badge (NTV mavi, TRT kırmızı, Sözcü turuncu), göreceli zaman (5dk önce).
 
 ---
 
@@ -234,60 +203,52 @@ Dashboard tek sayfalık bir layout. Mobilde kartlar alt alta, desktop'ta grid ş
 ```
 gundem-radar/
 ├── app/
-│   ├── layout.tsx              # Root layout, font, meta tags
-│   ├── page.tsx                # Ana dashboard sayfası
-│   ├── globals.css             # Tailwind base + custom styles
+│   ├── layout.tsx              # Root layout, Inter font, PWA meta, SW kaydı
+│   ├── page.tsx                # Ana dashboard (client component, tüm kartlar)
+│   ├── globals.css             # Tailwind v4, glassmorphism, shimmer, ticker CSS
 │   │
-│   └── api/                    # API Routes (sunucu tarafı)
-│       ├── borsa/
-│       │   └── route.ts        # BIST endeks + özet veri
-│       ├── doviz/
-│       │   └── route.ts        # Döviz kurları + altın
-│       ├── portfolio/
-│       │   └── route.ts        # Kullanıcı portföy hisseleri
-│       ├── trends/
-│       │   └── route.ts        # Twitter/X trendleri
-│       ├── haberler/
-│       │   └── route.ts        # RSS haber akışı
-│       └── cron/
-│           └── route.ts        # Cron job handler (tüm verileri güncelle)
+│   └── api/
+│       ├── borsa/route.ts      # GET — Yahoo Finance XU100.IS + XU030.IS
+│       ├── doviz/route.ts      # GET — TCMB XML + Yahoo GC=F (altın)
+│       ├── portfolio/route.ts  # GET — Yahoo Finance .IS hisseleri + VOO
+│       ├── trends/route.ts     # GET — trends24.in scraping
+│       ├── haberler/route.ts   # GET — RSS feed parse (rss-parser)
+│       └── cron/route.ts       # GET/POST — tüm cache güncelle + Telegram alert
 │
 ├── components/
-│   ├── Dashboard.tsx           # Ana dashboard grid layout
-│   ├── BorsaCard.tsx           # Borsa özet kartı
-│   ├── DovizCard.tsx           # Döviz & altın kartı
-│   ├── PortfolioCard.tsx       # Portföy kartı
-│   ├── TrendsCard.tsx          # Twitter trendleri kartı
-│   ├── NewsCard.tsx            # Haberler kartı
-│   ├── PriceChange.tsx         # Fiyat değişim göstergesi (▲▼ + renk)
-│   ├── LastUpdated.tsx         # "Son güncelleme" etiketi
-│   └── RefreshButton.tsx       # Manuel yenileme butonu
+│   ├── BorsaCard.tsx           # BIST 100/30, piyasa durumu badge
+│   ├── DovizCard.tsx           # Döviz + altın satırları
+│   ├── PortfolioCard.tsx       # Hisse listesi, mini logo kutuları
+│   ├── TrendsCard.tsx          # X trendleri, sıralı liste
+│   ├── NewsCard.tsx            # Haberler, kaynak badge, göreceli zaman
+│   ├── PriceChange.tsx         # Pill badge: ▲+%1.23 veya ▼-0.45%
+│   ├── LastUpdated.tsx         # Pulse dot + "5dk önce güncellendi"
+│   ├── CardSkeleton.tsx        # Shimmer loading skeleton
+│   ├── RefreshButton.tsx       # SWR mutate ile tüm kartları yenile
+│   └── ServiceWorkerRegistrar.tsx  # PWA service worker kaydı
 │
 ├── lib/
-│   ├── redis.ts                # Upstash Redis client
-│   ├── fetchers/
-│   │   ├── borsa.ts            # BigPara API fetcher
-│   │   ├── doviz.ts            # TCMB + döviz fetcher
-│   │   ├── altin.ts            # Altın fiyatları fetcher
-│   │   ├── portfolio.ts        # Hisse + VOO fetcher
-│   │   ├── trends.ts           # Twitter trend scraper
-│   │   └── haberler.ts         # RSS parser
-│   ├── types.ts                # TypeScript tipleri
-│   └── utils.ts                # Yardımcı fonksiyonlar (format, tarih vs.)
+│   ├── types.ts                # BorsaSummary, DovizData, PortfolioItem, TrendItem, NewsItem
+│   ├── utils.ts                # formatNumber, formatRelativeTime, isBorsaOpen, direction
+│   ├── redis.ts                # Upstash Redis client (opsiyonel, try-catch sarmalı)
+│   └── fetchers/
+│       ├── borsa.ts            # Yahoo Finance XU100.IS / XU030.IS
+│       ├── doviz.ts            # TCMB XML parse + Yahoo GC=F altın hesabı
+│       ├── portfolio.ts        # Yahoo Finance .IS + VOO
+│       ├── trends.ts           # trends24.in regex scraper + twtdata fallback
+│       └── haberler.ts         # rss-parser ile 4 RSS kaynağı
 │
 ├── public/
 │   ├── manifest.json           # PWA manifest
-│   ├── sw.js                   # Service Worker (PWA)
-│   ├── icon-192.png            # PWA ikon
-│   └── icon-512.png            # PWA ikon
+│   ├── sw.js                   # Service Worker (cache-first, API hariç)
+│   ├── icon-192.png            # PWA ikon (eklenecek)
+│   └── icon-512.png            # PWA ikon (eklenecek)
 │
-├── vercel.json                 # Cron job tanımları
-├── next.config.js              # Next.js config
-├── tailwind.config.ts          # Tailwind config
-├── tsconfig.json               # TypeScript config
-├── package.json
-├── .env.local                  # Environment variables (API key'ler)
-└── .env.example                # Örnek env dosyası
+├── vercel.json                 # Cron: "0 7 * * 1-5" (Hobby plan: günde 1)
+├── next.config.ts              # Next.js config
+├── .env.local                  # Gerçek env vars (git'e commit edilmez)
+├── .env.example                # Örnek env (commit edilir)
+└── gundem-radar-prd.md         # Bu döküman
 ```
 
 ---
@@ -297,19 +258,22 @@ gundem-radar/
 ```env
 # .env.local
 
-# Upstash Redis
-UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
-UPSTASH_REDIS_REST_TOKEN=xxx
+# Upstash Redis (OPSİYONEL — olmadan da çalışır, sadece cache olmaz)
+# UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
+# UPSTASH_REDIS_REST_TOKEN=xxx
 
-# Haber API'leri (opsiyonel, RSS birincil)
-NEWSAPI_KEY=xxx                 # newsapi.org ücretsiz key
+# Telegram Bildirimleri (OPSİYONEL)
+# TELEGRAM_BOT_TOKEN=xxx          # BotFather'dan alınan token
+# TELEGRAM_CHAT_ID=xxx            # Kendi chat ID'n
 
-# Telegram Bot (Faz 4)
-TELEGRAM_BOT_TOKEN=xxx
-TELEGRAM_CHAT_ID=xxx
+# Cron Güvenliği (OPSİYONEL ama önerilen)
+# CRON_SECRET=gizli-bir-sifre    # /api/cron endpoint'ini yetkisiz çağrılara karşı korur
+```
 
-# Cron güvenliği
-CRON_SECRET=xxx                 # Cron endpoint'ini korumak için secret key
+**Vercel'de env vars eklemek için:**
+```bash
+vercel env add TELEGRAM_BOT_TOKEN
+vercel env add TELEGRAM_CHAT_ID
 ```
 
 ---
@@ -319,395 +283,280 @@ CRON_SECRET=xxx                 # Cron endpoint'ini korumak için secret key
 ```typescript
 // lib/types.ts
 
-// Borsa
 interface BorsaSummary {
-  bist100: {
-    value: number;
-    change: number;        // yüzde değişim
-    changeAmount: number;  // TL değişim
-    direction: 'up' | 'down' | 'flat';
-    time: string;          // son güncelleme saati
-  };
-  bist30: {
-    value: number;
-    change: number;
-    direction: 'up' | 'down' | 'flat';
-    time: string;
-  };
-}
-
-// Döviz & Altın
-interface DovizData {
-  dolar: CurrencyItem;
-  euro: CurrencyItem;
-  sterlin: CurrencyItem;
-  gramAltin: CurrencyItem;
-  ceyrekAltin: CurrencyItem;
+  bist100: { value: number; change: number; changeAmount: number; direction: Dir; time: string };
+  bist30:  { value: number; change: number; changeAmount: number; direction: Dir; time: string };
   updatedAt: string;
 }
 
 interface CurrencyItem {
-  name: string;
-  buying: number;    // alış
-  selling: number;   // satış
-  change: number;    // yüzde değişim
-  direction: 'up' | 'down' | 'flat';
+  name: string; buying: number; selling: number; change: number; direction: Dir;
 }
 
-// Portföy
+interface DovizData {
+  dolar: CurrencyItem; euro: CurrencyItem; sterlin: CurrencyItem;
+  gramAltin: CurrencyItem; ceyrekAltin: CurrencyItem;
+  updatedAt: string;
+}
+
 interface PortfolioItem {
-  symbol: string;       // THYAO, ASELS, vs.
-  name: string;         // Türk Hava Yolları
-  price: number;
-  change: number;       // yüzde
-  direction: 'up' | 'down' | 'flat';
-  currency: 'TRY' | 'USD';
+  symbol: string; name: string; price: number;
+  change: number; direction: Dir; currency: 'TRY' | 'USD';
 }
 
-type Portfolio = PortfolioItem[];
-
-// Twitter Trendleri
 interface TrendItem {
-  rank: number;
-  name: string;         // hashtag veya konu
-  tweetCount?: number;  // tweet sayısı (varsa)
-  url?: string;         // Twitter arama linki
+  rank: number; name: string; tweetCount?: number; url?: string;
 }
 
-interface TrendsData {
-  trends: TrendItem[];
-  updatedAt: string;
-}
+interface TrendsData { trends: TrendItem[]; updatedAt: string; }
 
-// Haberler
 interface NewsItem {
-  title: string;
-  source: string;       // NTV, CNN Türk, vs.
-  url: string;
-  publishedAt: string;  // ISO tarih
-  category?: string;    // gündem, ekonomi, spor
+  title: string; source: string; url: string;
+  publishedAt: string; category?: string;
 }
 
-interface NewsData {
-  articles: NewsItem[];
-  updatedAt: string;
-}
+interface NewsData { articles: NewsItem[]; updatedAt: string; }
 
-// Dashboard'un tüm verisi
-interface DashboardData {
-  borsa: BorsaSummary;
-  doviz: DovizData;
-  portfolio: Portfolio;
-  trends: TrendsData;
-  news: NewsData;
-  lastFullUpdate: string;
-}
+type Dir = 'up' | 'down' | 'flat';
 ```
 
 ---
 
 ## 9. API ROUTE DETAYLARI
 
-### 9.1 GET /api/borsa
+### GET /api/borsa
 
-**İş akışı:**
-1. Redis'ten `borsa:summary` key'ini oku
-2. Eğer cache varsa ve 15 dakikadan yeni ise → direkt döndür
-3. Eğer cache yoksa veya eskiyse:
-   - BigPara API'den BIST 100 ve BIST 30 verisini çek
-   - Parse et, `BorsaSummary` formatına dönüştür
-   - Redis'e yaz (TTL: 900 saniye = 15 dakika)
-   - Döndür
+1. Redis'ten `borsa:summary` oku (TTL 900s)
+2. Cache miss → Yahoo Finance `XU100.IS` + `XU030.IS` paralel fetch
+3. `(price - prevClose) / prevClose × 100` ile değişim hesapla
+4. Redis'e yaz (TTL 900s), döndür
 
-**BigPara Endpoint:**
-```
-GET http://bigpara.hurriyet.com.tr/api/v1/hisse/list
-```
-Response: Hisse listesi JSON (tüm BIST hisseleri)
+### GET /api/doviz
 
-### 9.2 GET /api/doviz
+1. Redis'ten `doviz:latest` oku (TTL 900s)
+2. Cache miss → TCMB `today.xml` + Yahoo `GC=F` paralel fetch
+3. XML'den USD, EUR, GBP regex ile parse et
+4. Gram Altın = `(GC=F / 31.1035) × USD_satis`; Çeyrek Altın = `Gram × 1.75`
+5. Redis'e yaz, döndür
 
-**İş akışı:**
-1. Redis'ten `doviz:latest` oku
-2. Cache kontrol (15 dk)
-3. Yoksa → TCMB XML + BigPara altın verisi çek
-4. Parse, kaydet, döndür
+### GET /api/portfolio
 
-**TCMB Endpoint:**
-```
-GET https://www.tcmb.gov.tr/kurlar/today.xml
-```
-Response: XML formatında döviz kurları
+1. Redis'ten `portfolio:latest` oku (TTL 900s)
+2. Cache miss → `['THYAO.IS', 'ASELS.IS', 'ENJSA.IS', 'KCHOL.IS', 'VOO']` için Promise.allSettled
+3. Başarısız olanlar sonuçtan çıkar (kart hata vermez)
+4. Redis'e yaz, döndür
 
-### 9.3 GET /api/portfolio
+### GET /api/trends
 
-**İş akışı:**
-1. Sabit tanımlı semboller: `['THYAO', 'ASELS', 'ENJSA', 'KCHOL']`
-2. Her sembol için BigPara'dan detay çek
-3. VOO için Yahoo Finance'ten çek
-4. Birleştir, döndür
+1. Redis'ten `trends:latest` oku (TTL 1800s)
+2. Cache miss → `trends24.in/turkey/` fetch
+3. Regex ile Twitter arama link'lerini çıkar, top 20 benzersiz trend al
+4. Başarısız → `twtdata.com` fallback dene
+5. Redis'e yaz, döndür
 
-**Sabit portföy tanımı (kod içinde, env'de değil):**
-```typescript
-const MY_STOCKS = ['THYAO', 'ASELS', 'ENJSA', 'KCHOL'];
-const MY_ETFS = [{ symbol: 'VOO', source: 'yahoo' }];
-```
+### GET /api/haberler
 
-### 9.4 GET /api/trends
+1. Redis'ten `news:latest` oku (TTL 3600s)
+2. Cache miss → 4 RSS kaynağı `Promise.allSettled` ile paralel çek
+3. `rss-parser` ile parse, tarihe göre sırala, top 20
+4. Redis'e yaz, döndür
 
-**İş akışı:**
-1. Redis'ten `trends:latest` oku
-2. Cache kontrol (30 dk)
-3. Yoksa → `twtdata.com/twitter-trends/turkey/` sayfasını fetch et
-4. HTML'den trend bilgilerini cheerio ile parse et
-5. Top 10 trendi al, kaydet, döndür
+### GET|POST /api/cron
 
-**Fallback:** Parse başarısız olursa, Google Trends Türkiye verisini dene.
+**Güvenlik:** `Authorization: Bearer {CRON_SECRET}` header kontrolü (CRON_SECRET tanımlıysa)
 
-### 9.5 GET /api/haberler
+1. Tüm fetcher'ları `Promise.allSettled` ile çalıştır
+2. Sonuçları Redis'e yaz
+3. Alert kuralları kontrol et:
+   - BIST 100 `|change| ≥ 3%` → Telegram mesajı
+   - Herhangi hisse `|change| ≥ 5%` → Telegram mesajı
+   - Dolar `|change| ≥ 2%` → Telegram mesajı
+4. Sonuç JSON döndür
 
-**İş akışı:**
-1. Redis'ten `news:latest` oku
-2. Cache kontrol (1 saat)
-3. Yoksa → RSS feed'leri paralel olarak çek (Promise.all)
-4. `rss-parser` ile parse et
-5. Tüm haberleri birleştir, tarihe göre sırala, son 20'yi al
-6. Kaydet, döndür
-
-### 9.6 POST /api/cron
-
-**Güvenlik:** `CRON_SECRET` header kontrolü
-
-**İş akışı:**
-1. Header'da `Authorization: Bearer {CRON_SECRET}` kontrol et
-2. Tüm veri kaynaklarını paralel güncelle
-3. Eğer önemli bir değişiklik varsa (BIST %3+ hareket gibi) → Telegram bildirim gönder
-4. Sonuçları döndür
-
-**vercel.json cron tanımı:**
+**vercel.json:**
 ```json
-{
-  "crons": [
-    {
-      "path": "/api/cron",
-      "schedule": "*/15 9-18 * * 1-5"
-    }
-  ]
-}
+{ "crons": [{ "path": "/api/cron", "schedule": "0 7 * * 1-5" }] }
 ```
-Bu cron: Pazartesi-Cuma, 09:00-18:00 arası, her 15 dakikada çalışır (borsa saatleri).
+> Hobby plan günde 1 cron hakkı tanır. Her gün 07:00 UTC (10:00 TR saati).
+> Gün içi güncelleme frontend SWR tarafından yapılır (5dk interval).
 
 ---
 
-## 10. FRONTEND DETAYLARI
+## 10. FRONTEND — VERİ ÇEKME STRATEJİSİ
 
-### 10.1 Dashboard Layout
-
-```tsx
-// app/page.tsx — Ana Sayfa
-// Tüm kartları yan yana (desktop) veya alt alta (mobil) gösterir.
-// Veri çekme: Her kart kendi verisini client-side fetch ile alır (SWR veya React Query).
-// Auto-refresh: Her 5 dakikada otomatik yenile.
-// Manuel refresh: Sağ üstte yenile butonu.
-```
-
-**Desktop Layout (grid):**
-```
-┌──────────────┬──────────────┬──────────────┐
-│  Borsa Özeti │ Döviz/Altın  │  Portföyüm   │
-│              │              │              │
-├──────────────┴──────────────┴──────────────┤
-│           Twitter/X Trendleri              │
-├────────────────────────────────────────────┤
-│              Son Haberler                  │
-└────────────────────────────────────────────┘
-```
-
-**Mobil Layout:** Tüm kartlar tek sütun, alt alta.
-
-### 10.2 Stil Kılavuzu
-
-- **Renk paleti:** Koyu tema (dark mode default) — göz yormayan, haber/finans uygulaması hissi
-  - Background: `#0f172a` (slate-900)
-  - Card background: `#1e293b` (slate-800)
-  - Text: `#f1f5f9` (slate-100)
-  - Accent yeşil (artış): `#22c55e` (green-500)
-  - Accent kırmızı (düşüş): `#ef4444` (red-500)
-  - Accent mavi (nötr/link): `#3b82f6` (blue-500)
-- **Font:** `Inter` veya sistem fontu
-- **Border radius:** `rounded-xl` (12px)
-- **Kart gölge:** `shadow-lg` hafif glow efekti
-
-### 10.3 Veri Çekme Stratejisi (Frontend)
+Her kart kendi SWR hook'unu kullanır, birbirinden bağımsız:
 
 ```typescript
-// SWR kullanımı — otomatik yenileme ve cache
-import useSWR from 'swr';
-
-const fetcher = (url: string) => fetch(url).then(r => r.json());
-
-// Her kart kendi hook'unu kullanır:
-function useBorsa() {
-  return useSWR<BorsaSummary>('/api/borsa', fetcher, {
-    refreshInterval: 5 * 60 * 1000, // 5 dakikada bir yenile
-    revalidateOnFocus: true,         // Sekmeye dönünce yenile
-  });
-}
+const { data, error, isLoading } = useSWR<BorsaSummary>('/api/borsa', fetcher, {
+  refreshInterval: 5 * 60 * 1000,  // 5 dakikada bir yenile
+  revalidateOnFocus: true,          // Sekmeye dönünce yenile
+});
 ```
+
+| Kart | Endpoint | Refresh |
+|------|----------|---------|
+| BorsaCard | `/api/borsa` | 5 dk |
+| DovizCard | `/api/doviz` | 5 dk |
+| PortfolioCard | `/api/portfolio` | 5 dk |
+| TrendsCard | `/api/trends` | 30 dk |
+| NewsCard | `/api/haberler` | 60 dk |
+
+**RefreshButton:** `useSWRConfig().mutate(() => true)` ile tüm key'leri aynı anda revalidate eder.
 
 ---
 
 ## 11. PWA YAPILANDIRMASI
 
-### 11.1 manifest.json
+`public/manifest.json`:
 ```json
 {
-  "name": "Gündem Radar",
-  "short_name": "Gündem",
-  "description": "Türkiye gündem takip paneli",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
-  "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
-  ]
+  "name": "Gündem Radar", "short_name": "Gündem",
+  "start_url": "/", "display": "standalone",
+  "background_color": "#0f172a", "theme_color": "#0f172a"
 }
 ```
 
-### 11.2 Service Worker
-Basit cache-first stratejisi. Offline'da son cache'li veriyi göster.
+`public/sw.js`: Cache-first strateji. API route'ları (`/api/*`) cache'lenmez.
+
+`ServiceWorkerRegistrar.tsx`: `useEffect` içinde `navigator.serviceWorker.register('/sw.js')`.
+
+**Ana ekrana eklemek için:** Safari → Paylaş → Ana Ekrana Ekle
 
 ---
 
-## 12. TELEGRAM BİLDİRİM (FAZ 4)
+## 12. TELEGRAM BİLDİRİM
 
-### 12.1 Bot Kurulumu
-1. BotFather'dan yeni bot oluştur → token al
-2. Kendine mesaj at → chat_id'yi al
-3. `.env.local`'e ekle
+### Bot Kurulumu
+1. Telegram'da `@BotFather` → `/newbot` → token al
+2. Bot'a bir mesaj at, sonra `api.telegram.org/bot{TOKEN}/getUpdates` ile `chat_id` al
+3. `.env.local`'e ekle (veya Vercel dashboard'dan)
 
-### 12.2 Bildirim Kuralları
+### Alert Kuralları
 ```typescript
-// Tetikleyiciler:
-const ALERT_RULES = {
-  bist100_change: 3,     // BIST 100 %3+ hareket ederse bildir
-  portfolio_change: 5,    // Portföydeki bir hisse %5+ hareket ederse
-  dolar_change: 2,        // Dolar %2+ hareket ederse
+const RULES = {
+  bist100_pct: 3,    // BIST 100 günlük %3+ hareket
+  portfolio_pct: 5,  // Portföydeki herhangi hisse %5+
+  dolar_pct: 2,      // Dolar/TL %2+
 };
 ```
 
-### 12.3 Mesaj Formatı
+### Mesaj Formatı
 ```
 🚨 GÜNDEM RADAR ALERT
 
-📈 BIST 100: 10.234 (+%3.5)
-Borsa bugün sert yükseldi!
+📈 BIST 100: 13.827 (+%3.1)
+Borsa sert yükseldi!
 
-⏰ 25.05.2026 14:35
+⏰ 25.05.2026 10:15
 ```
 
 ---
 
-## 13. GELİŞTİRME FAZLARI
-
-### FAZ 1 — Temel Altyapı + Borsa/Döviz (1-2 gün)
-- [x] Next.js projesi oluştur (App Router, TypeScript, Tailwind)
-- [x] Upstash Redis bağlantısı kur
-- [x] `/api/borsa` route — BigPara'dan BIST verisi çek
-- [x] `/api/doviz` route — TCMB + altın verisi çek
-- [x] `BorsaCard` ve `DovizCard` komponentleri
-- [x] Dashboard layout (responsive grid)
-- [x] Vercel'e deploy et
-
-### FAZ 2 — Haberler + Portföy (1 gün)
-- [ ] `/api/haberler` route — RSS parse
-- [ ] `/api/portfolio` route — BigPara + Yahoo Finance
-- [ ] `NewsCard` ve `PortfolioCard` komponentleri
-- [ ] Auto-refresh (SWR)
-
-### FAZ 3 — Twitter Trendleri (1 gün)
-- [ ] `/api/trends` route — trend scraping
-- [ ] `TrendsCard` komponenti
-- [ ] Fallback mekanizması (scraping başarısız olursa)
-
-### FAZ 4 — Bildirim + Cron (1 gün)
-- [ ] Vercel Cron job kurulumu
-- [ ] Telegram bot entegrasyonu
-- [ ] Alert kuralları tanımla
-- [ ] `/api/cron` route
-
-### FAZ 5 — PWA + Polish (1 gün)
-- [ ] PWA manifest + service worker
-- [ ] Uygulama ikonu tasarla
-- [ ] Offline fallback
-- [ ] Loading skeleton'lar
-- [ ] Error handling iyileştirmeleri
-- [ ] Son test ve production deploy
-
----
-
-## 14. BAĞIMLILIKLAR (package.json)
+## 13. BAĞIMLILIKLAR
 
 ```json
 {
   "dependencies": {
-    "next": "^14.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "swr": "^2.0.0",
-    "@upstash/redis": "^1.28.0",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "swr": "^2.4.1",
+    "@upstash/redis": "^1.38.0",
     "rss-parser": "^3.13.0",
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.2.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
-    "@types/react": "^18.0.0",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.0.0",
-    "postcss": "^8.0.0"
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.2.6"
   }
 }
 ```
 
 ---
 
-## 15. ÖNEMLİ NOTLAR VE EDGE CASE'LER
+## 14. ÖNEMLİ NOTLAR VE EDGE CASE'LER
 
-1. **Borsa saatleri:** BIST 10:00-18:00 arası açık (Pazartesi-Cuma). Hafta sonu ve tatillerde son kapanış verisi gösterilecek. Kart üzerinde "Borsa kapalı — son kapanış verisi" uyarısı göster.
+1. **BigPara engeli:** `bigpara.hurriyet.com.tr/api/*` endpoint'leri "permission denied" veriyor. Tüm borsa/hisse verisi Yahoo Finance'a taşındı (`XU100.IS`, `THYAO.IS` vb.).
 
-2. **Rate limiting:** BigPara endpoint'leri ticari API değil. Agresif istek atma. Cache kullan, minimum 15 dakikada bir güncelle.
+2. **Yahoo Finance resmi değil:** `query1.finance.yahoo.com` resmi API değil, değişebilir. Alternatif: `query2.finance.yahoo.com` (aynı format, farklı sunucu).
 
-3. **Scraping kırılganlığı:** Twitter trend scraping'i site yapısı değişirse bozulabilir. Cheerio selector'lerini esnek tut. Hata durumunda "Trend verisi geçici olarak kullanılamıyor" mesajı göster, uygulamayı çökertme.
+3. **Borsa saatleri:** BIST 10:00-18:00 TR (07:00-15:00 UTC), Pazartesi-Cuma. `isBorsaOpen()` utility fonksiyonu kartlarda "Kapalı" badge'i göstermek için kullanılır. Hafta sonu son kapanış fiyatı gösterilir.
 
-4. **TCMB XML:** Hafta sonu güncellenmiyor. Cuma kapanış verisi Pazartesi'ye kadar aynı kalır.
+4. **TCMB hafta sonu:** XML Cumartesi-Pazar güncellenmez. Cuma kapanış verisi Pazartesi'ye kadar gösterilir.
 
-5. **VOO verisi:** Yahoo Finance API resmi değil, değişebilir. `yfinance` Python paketi yerine direkt endpoint kullan. Alternatif: `query1.finance.yahoo.com/v8/finance/chart/VOO`
+5. **Altın değişim yüzdesi:** TCMB XML önceki gün verisini içermiyor. Yahoo `GC=F` üzerinden `chartPreviousClose` kullanılarak hesaplanıyor. USD/TRY kuru sabittir dolayısıyla TRY değişim ≈ USD değişime eşit.
 
-6. **Vercel Hobby plan limitleri:**
-   - Serverless Function: 10 saniye timeout
+6. **Trends scraping kırılganlığı:** `trends24.in` HTML yapısı değişirse regex bozulabilir. Hata durumunda kart "Trend verisi geçici olarak alınamıyor" gösterir, uygulama çökmez. `twtdata.com` ikinci fallback.
+
+7. **Vercel Hobby limitleri:**
+   - Serverless Function timeout: 10 saniye
    - Bandwidth: 100 GB/ay
-   - Cron: günde 2 cron çalışma (Hobby), Pro'da sınırsız
-   - Edge Function: ücretsiz
+   - Cron: **günde 1** (Pro'da sınırsız)
+   - Redis olmadan her API çağrısı doğrudan kaynak sunucuya gider
 
-7. **Hata yönetimi:** Her API route'ta try-catch. Bir kaynak çökerse diğerleri etkilenmemeli. Frontend'de her kart bağımsız loading/error state'e sahip olmalı.
+8. **Redis opsiyonel:** `getCached`/`setCache` fonksiyonları try-catch sarmalıdır. Env var tanımlı değilse hata fırlatılır ama yakalanır, `null` döner, fetcher direkt çalışır.
 
-8. **Dil:** Arayüz tamamen Türkçe.
+9. **Error isolation:** Her kart `Promise.allSettled` / bağımsız SWR hook kullanır. Bir kaynak çökerse diğer kartlar etkilenmez.
 
 ---
 
-## 16. GELECEK FİKİRLER (BACKLOG)
+## 15. DEPLOYMENT
 
-- [ ] Kripto para kartı (BTC, ETH)
-- [ ] Hava durumu mini kartı (İstanbul)
-- [ ] Deprem bilgisi (AFAD API)
-- [ ] Borsa kapanış özeti (günlük AI-generated)
+### İlk Deploy
+```bash
+cd /Users/berkaysarikaya/Projects/gundem-radar
+vercel link        # Vercel projesine bağla
+vercel --prod      # Production deploy
+```
+
+### Sonraki Deploy'lar
+GitHub'a push yapıldığında Vercel otomatik preview deploy oluşturur.
+Production için:
+```bash
+git push && vercel --prod
+```
+
+### Env Vars (Vercel Dashboard veya CLI)
+```bash
+vercel env add TELEGRAM_BOT_TOKEN production
+vercel env add TELEGRAM_CHAT_ID production
+vercel env add UPSTASH_REDIS_REST_URL production
+vercel env add UPSTASH_REDIS_REST_TOKEN production
+```
+
+---
+
+## 16. GELİŞTİRME FAZLARI — TAMAMLANAN
+
+Tüm fazlar tek oturumda tamamlandı (25.05.2026):
+
+- [x] **FAZ 1** — Next.js 16 kurulumu, Redis client, BorsaCard, DovizCard, responsive layout, Vercel deploy
+- [x] **FAZ 2** — PortfolioCard (Yahoo Finance), NewsCard (4 RSS kaynağı), SWR auto-refresh
+- [x] **FAZ 3** — TrendsCard (trends24.in scraping, twtdata fallback), 20 trend
+- [x] **FAZ 4** — `/api/cron`, Telegram bildirimleri, alert kuralları, Vercel Cron
+- [x] **FAZ 5** — PWA manifest, Service Worker, shimmer skeleton, error handling, glassmorphism UI
+
+---
+
+## 17. BACKLOG
+
+- [ ] Kripto para kartı (BTC, ETH — Yahoo Finance: `BTC-USD`)
+- [ ] Hava durumu mini kartı (İstanbul — Open-Meteo ücretsiz API)
+- [ ] Deprem bilgisi (AFAD veya Kandilli RSS)
+- [ ] PWA ikonu tasarla (`public/icon-192.png`, `public/icon-512.png`)
+- [ ] Upstash Redis bağlantısı kur (cache iyileştirmesi için)
+- [ ] Telegram bot aktif et (TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID)
+- [ ] Borsa kapanış özeti (günlük Claude API ile otomatik özet)
 - [ ] Haftalık özet Telegram mesajı
-- [ ] Tema değiştirme (açık/koyu mod)
-- [ ] Widget desteği (kart sıralamasını değiştir)
+- [ ] Tema: açık/koyu mod toggle
 
 ---
 
-*Bu döküman, AI ajanlarının (Claude Code, Cursor, Copilot vs.) projeyi baştan sona inşa etmesi için yeterli bilgiyi içerir. Her faz bağımsız olarak tamamlanabilir. Faz 1'den başlayın.*
+*Bu döküman uygulamanın gerçek implementasyonunu yansıtır (v1.0 — 25.05.2026).*
+*Tüm fazlar tamamlandı. Production: https://gundem-radar.vercel.app*
