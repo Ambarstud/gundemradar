@@ -1,7 +1,7 @@
-import { DovizData, CurrencyItem } from '@/lib/types';
+import { DovizData } from '@/lib/types';
 import { direction } from '@/lib/utils';
 
-const TCMB_URL = 'https://www.tcmb.gov.tr/kurlar/today.xml';
+const TCMB_TODAY = 'https://www.tcmb.gov.tr/kurlar/today.xml';
 const TROY_OZ_TO_GRAM = 31.1035;
 
 function parseXmlRate(xml: string, currencyCode: string): { buying: number; selling: number } | null {
@@ -14,61 +14,91 @@ function parseXmlRate(xml: string, currencyCode: string): { buying: number; sell
   return { buying: parseFloat(match[1]), selling: parseFloat(match[2]) };
 }
 
-async function fetchGoldUSD(): Promise<number> {
-  const res = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=2d', {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) throw new Error('Gold fiyatı alınamadı');
-  const json = await res.json();
-  return json?.chart?.result?.[0]?.meta?.regularMarketPrice ?? 0;
+function calcChange(current: number, previous: number): number {
+  if (!previous || !current) return 0;
+  return ((current - previous) / previous) * 100;
 }
 
-async function fetchGoldPrevUSD(): Promise<number> {
-  const res = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=2d', {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) return 0;
+/** TCMB'nin bir önceki iş günü kur dosyası URL'si */
+function previousBusinessDayUrl(): string {
+  const d = new Date();
+  // İstanbul saatiyle hesapla
+  const tr = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+  tr.setDate(tr.getDate() - 1);
+  while (tr.getDay() === 0 || tr.getDay() === 6) {
+    tr.setDate(tr.getDate() - 1);
+  }
+  const yyyy = tr.getFullYear();
+  const mm = String(tr.getMonth() + 1).padStart(2, '0');
+  const dd = String(tr.getDate()).padStart(2, '0');
+  const ddmmyyyy = `${dd}${mm}${yyyy}`;
+  return `https://www.tcmb.gov.tr/kurlar/${yyyy}${mm}/${ddmmyyyy}.xml`;
+}
+
+async function fetchTcmbXml(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) return null;
+    return res.text();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchGoldPrices(): Promise<{ current: number; previous: number }> {
+  const res = await fetch(
+    'https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=5d',
+    { headers: { 'User-Agent': 'Mozilla/5.0' }, next: { revalidate: 0 } }
+  );
+  if (!res.ok) return { current: 0, previous: 0 };
   const json = await res.json();
-  return json?.chart?.result?.[0]?.meta?.chartPreviousClose ?? 0;
+  const meta = json?.chart?.result?.[0]?.meta ?? {};
+  return {
+    current: meta.regularMarketPrice ?? 0,
+    previous: meta.chartPreviousClose ?? meta.regularMarketPrice ?? 0,
+  };
 }
 
 export async function fetchDoviz(): Promise<DovizData> {
-  const [tcmbRes, goldUSD, goldPrevUSD] = await Promise.all([
-    fetch(TCMB_URL, { headers: { 'User-Agent': 'Mozilla/5.0' }, next: { revalidate: 0 } }),
-    fetchGoldUSD(),
-    fetchGoldPrevUSD(),
+  const prevUrl = previousBusinessDayUrl();
+
+  const [todayXml, prevXml, gold] = await Promise.all([
+    fetchTcmbXml(TCMB_TODAY),
+    fetchTcmbXml(prevUrl),
+    fetchGoldPrices(),
   ]);
 
-  if (!tcmbRes.ok) throw new Error(`TCMB hatası: ${tcmbRes.status}`);
-  const xml = await tcmbRes.text();
+  if (!todayXml) throw new Error('TCMB bugünkü kur alınamadı');
+  const xml = todayXml;
   const now = new Date().toISOString();
 
-  function makeItem(name: string, code: string, multiplier = 1): CurrencyItem {
-    const rates = parseXmlRate(xml, code);
-    if (!rates) return { name, buying: 0, selling: 0, change: 0, direction: 'flat' };
-    // TCMB çapraz kurları için birim çarpanı (bazı kurlar 100 birim için)
+  function makeCurrency(name: string, code: string) {
+    const today = parseXmlRate(xml, code);
+    const prev = prevXml ? parseXmlRate(prevXml, code) : null;
+    if (!today) return { name, buying: 0, selling: 0, change: 0, direction: 'flat' as const };
+    const change = calcChange(today.selling, prev?.selling ?? today.selling);
     return {
       name,
-      buying: rates.buying * multiplier,
-      selling: rates.selling * multiplier,
-      change: 0,
-      direction: 'flat',
+      buying: today.buying,
+      selling: today.selling,
+      change,
+      direction: direction(change),
     };
   }
 
-  const dolar = makeItem('ABD Doları', 'USD');
-  const euro = makeItem('Euro', 'EUR');
-  const sterlin = makeItem('İngiliz Sterlini', 'GBP');
+  const dolar = makeCurrency('ABD Doları', 'USD');
+  const euro = makeCurrency('Euro', 'EUR');
+  const sterlin = makeCurrency('İngiliz Sterlini', 'GBP');
 
-  // Gram altın = (USD/oz × USD/TRY) / 31.1035
   const usdTry = dolar.selling || 1;
-  const gramGoldTry = (goldUSD / TROY_OZ_TO_GRAM) * usdTry;
-  const gramGoldPrevTry = (goldPrevUSD / TROY_OZ_TO_GRAM) * usdTry;
-  const gramGoldChange = gramGoldPrevTry ? ((gramGoldTry - gramGoldPrevTry) / gramGoldPrevTry) * 100 : 0;
+  const gramGoldTry = (gold.current / TROY_OZ_TO_GRAM) * usdTry;
+  const gramGoldPrevTry = (gold.previous / TROY_OZ_TO_GRAM) * usdTry;
+  const gramGoldChange = calcChange(gramGoldTry, gramGoldPrevTry);
 
-  const gramAltin: CurrencyItem = {
+  const gramAltin = {
     name: 'Gram Altın',
     buying: gramGoldTry * 0.995,
     selling: gramGoldTry,
@@ -76,8 +106,7 @@ export async function fetchDoviz(): Promise<DovizData> {
     direction: direction(gramGoldChange),
   };
 
-  // Çeyrek altın = 1.75 gram
-  const ceyrekAltin: CurrencyItem = {
+  const ceyrekAltin = {
     name: 'Çeyrek Altın',
     buying: gramGoldTry * 1.75 * 0.995,
     selling: gramGoldTry * 1.75,

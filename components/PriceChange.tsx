@@ -3,7 +3,7 @@
 interface Props {
   change: number;
   direction: 'up' | 'down' | 'flat';
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export default function PriceChange({ change, direction, size = 'md' }: Props) {
@@ -18,11 +18,17 @@ export default function PriceChange({ change, direction, size = 'md' }: Props) {
 
   const arrow = isUp ? '▲' : isDown ? '▼' : '—';
   const sign = change > 0 ? '+' : '';
-  const textSize = size === 'sm' ? 'text-xs' : 'text-xs';
+
+  const sizeClass =
+    size === 'lg' ? 'text-sm px-2.5 py-1' :
+    size === 'sm' ? 'text-[10px] px-1.5 py-0.5' :
+    'text-xs px-2 py-0.5';
+
+  const arrowSize = size === 'lg' ? 'text-xs' : 'text-[10px]';
 
   return (
-    <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full font-semibold tabular-nums ${bg} ${textSize}`}>
-      <span className="text-[10px]">{arrow}</span>
+    <span className={`inline-flex items-center gap-0.5 rounded-full font-semibold tabular-nums whitespace-nowrap ${bg} ${sizeClass}`}>
+      <span className={arrowSize}>{arrow}</span>
       {sign}{Math.abs(change).toFixed(2)}%
     </span>
   );

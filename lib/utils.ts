@@ -22,13 +22,21 @@ export function formatRelativeTime(iso: string): string {
 }
 
 export function isBorsaOpen(): boolean {
-  const now = new Date();
-  const day = now.getDay();
-  if (day === 0 || day === 6) return false;
-  const hour = now.getHours();
-  const minute = now.getMinutes();
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Istanbul',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
+  if (weekday === 'Sat' || weekday === 'Sun') return false;
+
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
   const totalMinutes = hour * 60 + minute;
-  return totalMinutes >= 600 && totalMinutes < 1080; // 10:00 - 18:00 Turkey time
+  return totalMinutes >= 600 && totalMinutes < 1080; // 10:00 - 18:00 TR
 }
 
 export function direction(change: number): 'up' | 'down' | 'flat' {

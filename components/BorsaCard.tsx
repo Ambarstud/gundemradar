@@ -6,30 +6,9 @@ import { formatNumber, isBorsaOpen } from '@/lib/utils';
 import PriceChange from './PriceChange';
 import LastUpdated from './LastUpdated';
 import CardSkeleton from './CardSkeleton';
+import CardShell from './ui/CardShell';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-interface IndexRowProps {
-  label: string;
-  value: number;
-  change: number;
-  direction: 'up' | 'down' | 'flat';
-  big?: boolean;
-}
-
-function IndexRow({ label, value, change, direction, big }: IndexRowProps) {
-  return (
-    <div className="flex items-center justify-between py-3">
-      <div>
-        <p className="text-xs text-slate-500 mb-1">{label}</p>
-        <p className={`font-bold tabular-nums ${big ? 'text-2xl text-slate-100' : 'text-lg text-slate-200'}`}>
-          {formatNumber(value, 0)}
-        </p>
-      </div>
-      <PriceChange change={change} direction={direction} />
-    </div>
-  );
-}
 
 export default function BorsaCard() {
   const { data, error, isLoading } = useSWR<BorsaSummary>('/api/borsa', fetcher, {
@@ -41,30 +20,62 @@ export default function BorsaCard() {
 
   if (error || !data || 'error' in data) {
     return (
-      <div className="glass rounded-2xl p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">📈 Borsa</p>
+      <CardShell icon="📈" title="Borsa">
         <p className="text-red-400 text-sm">Veri alınamadı</p>
-      </div>
+      </CardShell>
     );
   }
 
   const acik = isBorsaOpen();
+  const glow = data.bist100.direction === 'up' ? 'green' : data.bist100.direction === 'down' ? 'red' : 'none';
+  const accent = glow === 'none' ? 'blue' : glow;
 
   return (
-    <div className={`glass glass-hover rounded-2xl p-5 ${data.bist100.direction === 'up' ? 'glow-green' : data.bist100.direction === 'down' ? 'glow-red' : ''}`}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">📈 Borsa</span>
-        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${acik ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-          {acik ? '● Açık' : '● Kapalı'}
+    <CardShell
+      icon="📈"
+      title="Borsa"
+      glow={glow}
+      accent={accent}
+      className="h-full"
+      badge={
+        <span
+          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+            acik ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
+          }`}
+        >
+          {acik ? 'Canlı' : 'Son Kapanış'}
         </span>
+      }
+      footer={<LastUpdated iso={data.updatedAt} />}
+    >
+      {/* Hero BIST 100 */}
+      <div className="mb-4">
+        <p className="text-[11px] text-slate-500 mb-1.5 font-medium">BIST 100</p>
+        <div className="flex items-end justify-between gap-3">
+          <p className="stat-hero text-slate-50 animate-value">
+            {formatNumber(data.bist100.value, 2)}
+          </p>
+          <PriceChange
+            change={data.bist100.change}
+            direction={data.bist100.direction}
+            size="lg"
+          />
+        </div>
       </div>
 
-      <div className="divide-y divide-slate-800">
-        <IndexRow label="BIST 100" value={data.bist100.value} change={data.bist100.change} direction={data.bist100.direction} big />
-        <IndexRow label="BIST 30" value={data.bist30.value} change={data.bist30.change} direction={data.bist30.direction} />
+      {/* BIST 30 secondary */}
+      <div className="stat-cell flex items-center justify-between">
+        <div>
+          <p className="text-[10px] text-slate-500 mb-0.5">BIST 30</p>
+          <p className="text-lg font-bold text-slate-200 tabular-nums">
+            {formatNumber(data.bist30.value, 2)}
+          </p>
+        </div>
+        <PriceChange
+          change={data.bist30.change}
+          direction={data.bist30.direction}
+        />
       </div>
-
-      <LastUpdated iso={data.updatedAt} />
-    </div>
+    </CardShell>
   );
 }
